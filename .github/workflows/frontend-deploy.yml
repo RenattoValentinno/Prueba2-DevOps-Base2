@@ -1,0 +1,48 @@
+name: Deploy Frontend
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Frontend"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      FRONTEND_INSTANCE_ID: i-0c798c0b0c1d2d114
+      FRONTEND_APP_DIR: /home/ssm-user/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar AWS Credentials
+        run: |
+          mkdir -p ~/.aws
+
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token=${{ secrets.AWS_SESSION_TOKEN }}
+          EOF
+
+          cat > ~/.aws/config << EOF
+          [default]
+          region=${AWS_REGION}
+          output=json
+          EOF
+
+      - name: Deploy Frontend por SSM
+        run: |
+          aws ssm send-command \
+          --region "${AWS_REGION}" \
+          --document-name "AWS-RunShellScript" \
+          --instance-ids "${FRONTEND_INSTANCE_ID}" \
+          --parameters commands='[
+            "cd /home/ssm-user/frontend",
+            "sudo docker compose pull",
+            "sudo docker compose up -d"
+          ]'
