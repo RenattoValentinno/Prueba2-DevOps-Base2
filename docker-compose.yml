@@ -31,10 +31,8 @@ services:
     image: renattoduoc/despachos-backend:latest
     container_name: despachos
     restart: always
-    depends_on:
-      - mysql
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/proyecto_db
+      SPRING_DATASOURCE_URL: jdbc:mysql://IP_PRIVADA_VENTAS:3306/proyecto_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 1234
     ports:
