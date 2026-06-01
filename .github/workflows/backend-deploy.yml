@@ -1,0 +1,89 @@
+name: Deploy Backend
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Backend"]
+    types:
+      - completed
+
+jobs:
+
+  deploy-ventas:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      INSTANCE_ID: i-0a563e255a30e73e7
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar AWS Credentials
+        run: |
+          mkdir -p ~/.aws
+
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token=${{ secrets.AWS_SESSION_TOKEN }}
+          EOF
+
+          cat > ~/.aws/config << EOF
+          [default]
+          region=${AWS_REGION}
+          output=json
+          EOF
+
+      - name: Deploy Ventas por SSM
+        run: |
+          aws ssm send-command \
+          --region "${AWS_REGION}" \
+          --document-name "AWS-RunShellScript" \
+          --instance-ids "${INSTANCE_ID}" \
+          --parameters commands='[
+            "cd /home/ssm-user/backend-ventas",
+            "sudo docker compose pull",
+            "sudo docker compose up -d"
+          ]'
+
+  deploy-despachos:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      INSTANCE_ID: i-01c24d2c73f13f034
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar AWS Credentials
+        run: |
+          mkdir -p ~/.aws
+
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token=${{ secrets.AWS_SESSION_TOKEN }}
+          EOF
+
+          cat > ~/.aws/config << EOF
+          [default]
+          region=${AWS_REGION}
+          output=json
+          EOF
+
+      - name: Deploy Despachos por SSM
+        run: |
+          aws ssm send-command \
+          --region "${AWS_REGION}" \
+          --document-name "AWS-RunShellScript" \
+          --instance-ids "${INSTANCE_ID}" \
+          --parameters commands='[
+            "cd /home/ssm-user/backend-despachos",
+            "sudo docker compose pull",
+            "sudo docker compose up -d"
+          ]'
